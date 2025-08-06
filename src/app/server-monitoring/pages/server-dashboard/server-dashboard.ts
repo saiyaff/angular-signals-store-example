@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { ServerMonitoringStore } from '../stores/server-monitoring';
+import { ServerMonitoringStore } from '../../stores/server-monitoring';
 
 @Component({
   selector: 'app-server-dashboard',

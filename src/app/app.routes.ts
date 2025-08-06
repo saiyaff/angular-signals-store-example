@@ -8,6 +8,6 @@ export const routes: Routes = [
   },
   {
     path: 'server-monitoring',
-    loadComponent: () => import('./server-monitoring/pages/server-dashboard').then(m => m.ServerDashboardComponent)
+    loadComponent: () => import('./server-monitoring/pages/server-dashboard/server-dashboard').then(m => m.ServerDashboardComponent)
   }
 ];
