@@ -1,0 +1,205 @@
+<div class="server-dashboard">
+  <div class="dashboard-header">
+    <h1>Server Monitoring Dashboard</h1>
+    
+    <div class="connection-status">
+      @if ($vm().isConnecting) {
+        <span class="status-indicator connecting"></span>
+        <span>Connecting...</span>
+      } @else if ($vm().isConnected) {
+        <span class="status-indicator connected"></span>
+        <span>Live Updates Active</span>
+      } @else {
+        <span class="status-indicator disconnected"></span>
+        <span>Disconnected</span>
+      }
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Servers</div>
+      <div class="stat-value">{{ $vm().statistics.totalServers }}</div>
+    </div>
+    <div class="stat-card status-online">
+      <div class="stat-label">Online</div>
+      <div class="stat-value">{{ $vm().statistics.onlineCount }}</div>
+    </div>
+    <div class="stat-card status-offline">
+      <div class="stat-label">Offline</div>
+      <div class="stat-value">{{ $vm().statistics.offlineCount }}</div>
+    </div>
+    <div class="stat-card status-maintenance">
+      <div class="stat-label">Maintenance</div>
+      <div class="stat-value">{{ $vm().statistics.maintenanceCount }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg CPU</div>
+      <div class="stat-value">{{ $vm().statistics.avgCpu }}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Memory</div>
+      <div class="stat-value">{{ $vm().statistics.avgMemory }}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Disk</div>
+      <div class="stat-value">{{ $vm().statistics.avgDisk }}%</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-container">
+      <input 
+        type="text" 
+        class="search-input"
+        placeholder="Search by name, IP, or location..."
+        [value]="$vm().searchTerm"
+        (input)="store.setSearchTerm($any($event.target).value)"/>
+    </div>
+    
+    <div class="filter-buttons">
+      <button 
+        class="filter-btn"
+        [class.active]="$vm().statusFilter === 'All'" 
+        (click)="store.setStatusFilter('All')">
+        All
+      </button>
+      <button 
+        class="filter-btn"
+        [class.active]="$vm().statusFilter === 'Online'" 
+        (click)="store.setStatusFilter('Online')">
+        Online
+      </button>
+      <button 
+        class="filter-btn"
+        [class.active]="$vm().statusFilter === 'Offline'" 
+        (click)="store.setStatusFilter('Offline')">
+        Offline
+      </button>
+    </div>
+
+    @if ($vm().searchTerm || $vm().statusFilter !== 'All') {
+      <button class="clear-filters-btn" (click)="store.clearFilters()">
+        Clear Filters
+      </button>
+    }
+
+    @if ($vm().hasSelection) {
+      <div class="selection-info">
+        {{ $vm().selectionCount }} selected
+        <button class="clear-selection-btn" (click)="store.clearSelection()">
+          Clear
+        </button>
+      </div>
+    }
+  </div>
+
+  @if ($vm().isLoading) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading servers...</p>
+    </div>
+  }
+
+  @if ($vm().error) {
+    <div class="error-banner">
+      <span>⚠️ {{ $vm().error }}</span>
+      <button (click)="store.fetchServers()">Retry</button>
+    </div>
+  }
+
+  <div class="server-grid">
+    @for (server of $vm().servers; track server.id) {
+      <div 
+        class="server-card"
+        [class.selected]="$vm().selectedServerIds.has(server.id)"
+        [class]="getStatusClass(server.status)"
+        (click)="store.toggleSelection(server)">
+        
+        <div class="server-header">
+          <h3>{{ server.name }}</h3>
+          <span class="status-badge" [class]="getStatusClass(server.status)">
+            {{ server.status }}
+          </span>
+        </div>
+
+        <div class="server-info">
+          <div class="info-row">
+            <span class="info-label">IP:</span>
+            <span class="info-value">{{ server.ipAddress }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Location:</span>
+            <span class="info-value">{{ server.location }}</span>
+          </div>
+          @if (server.status === 'Online') {
+            <div class="info-row">
+              <span class="info-label">Uptime:</span>
+              <span class="info-value">{{ formatUptime(server.uptime) }}</span>
+            </div>
+          }
+        </div>
+
+        @if (server.status === 'Online' || server.status === 'Rebooting') {
+          <div class="metrics">
+            <div class="metric">
+              <span class="metric-label">CPU</span>
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill"
+                  [class]="getUsageClass(server.cpuUsage)"
+                  [style.width.%]="server.cpuUsage">
+                </div>
+              </div>
+              <span class="metric-value">{{ server.cpuUsage | number:'1.0-0' }}%</span>
+            </div>
+            
+            <div class="metric">
+              <span class="metric-label">Memory</span>
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill"
+                  [class]="getUsageClass(server.memoryUsage)"
+                  [style.width.%]="server.memoryUsage">
+                </div>
+              </div>
+              <span class="metric-value">{{ server.memoryUsage | number:'1.0-0' }}%</span>
+            </div>
+            
+            <div class="metric">
+              <span class="metric-label">Disk</span>
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill"
+                  [class]="getUsageClass(server.diskUsage)"
+                  [style.width.%]="server.diskUsage">
+                </div>
+              </div>
+              <span class="metric-value">{{ server.diskUsage | number:'1.0-0' }}%</span>
+            </div>
+          </div>
+        }
+
+        <div class="server-actions">
+          <button 
+            class="action-btn reboot-btn"
+            [disabled]="$vm().rebootingServerIds.has(server.id) || server.status === 'Offline' || server.status === 'Maintenance'"
+            (click)="store.rebootServer(server.id); $event.stopPropagation()">
+            @if ($vm().rebootingServerIds.has(server.id)) {
+              <span class="spinner-small"></span>
+              Rebooting...
+            } @else {
+              Reboot
+            }
+          </button>
+        </div>
+      </div>
+    } @empty {
+      @if (!$vm().isLoading) {
+        <div class="empty-state">
+          <p>No servers found matching your filters.</p>
+        </div>
+      }
+    }
+  </div>
+</div>
